@@ -29,11 +29,12 @@ function isPackageManifest(manifest: CargoManifest): manifest is PackageManifest
     return 'package' in manifest
 }
 
-interface CrateMetadata {
+export interface CrateMetadata {
     baseDir: string,
     manifestPath: string,
     name: string,
     version: string,
+    mainVersion?: string,
 }
 
 export function collectCrates(root: string): CrateMetadata[] {
