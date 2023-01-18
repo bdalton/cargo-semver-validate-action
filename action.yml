@@ -2,10 +2,16 @@ name: 'Your name here'
 description: 'Provide a description here'
 author: 'Your name or organization here'
 inputs:
-  milliseconds: # change this
-    required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+  mainBranch:
+    required: false
+    default: 'main'
+    description: 'branch changes will be compared against'
+  repoPath:
+    required: false
+    description: 'path to root of git repository'
+  manifestDir:
+    required: false
+    description: 'directory containing the root Cargo.toml'
 runs:
   using: 'node16'
   main: 'dist/index.js'

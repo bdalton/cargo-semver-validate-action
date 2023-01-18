@@ -1,30 +1,45 @@
 import * as core from '@actions/core'
+import {branchChanges, isGitRepo} from './git-ops'
 import {collectCrates} from './manifest'
-import {isGitRepo, branchChanges} from './git_ops'
-
-
+import {partitionCrates} from './partition-crates'
 
 async function run(): Promise<void> {
   try {
-    // const root = '../mmba-assertion-service'
-    // console.log(collectCrates(root))
-    console.log(await isGitRepo())
-    console.log(await branchChanges())
+    const branch = core.getInput('mainBranch') || 'main'
+    const repoPath = core.getInput('repoPath')
+    const rootManifest = core.getInput('manifestDir')
 
+    core.debug(`repoPath: ${repoPath}`)
+    core.debug(`rootManifestPath: ${rootManifest}`)
+    core.debug(`branch: ${branch}`)
 
-    // const srcRoot = readFileSync('Cargo.toml', 'utf-8')
-    // const ms: string = core.getInput('milliseconds')
-    // core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
+    if (!isGitRepo(repoPath)) {
+      throw new Error('action needs to be run in the root of a git repo')
+    }
 
-    // core.debug(new Date().toTimeString())
-    // await wait(parseInt(ms, 10))
-    // core.debug(new Date().toTimeString())
+    const modifiedFiles = await branchChanges(repoPath)
+    core.debug(`${modifiedFiles.length} modified files`)
 
-    // core.setOutput('time', new Date().toTimeString())
+    const manifests = await collectCrates(repoPath, rootManifest, branch)
+    const crateNames = manifests.map(
+      manifest =>
+        `${manifest.name}@${manifest.version}->${manifest.branchVersion}`
+    )
+    core.debug(`crates: ${crateNames.join(', ')}`)
+
+    const [modifiedManifests, unmodifiedManifests] = partitionCrates(
+      manifests,
+      modifiedFiles
+    )
+    const modifiedCrateNames = modifiedManifests.map(manifest => manifest.name)
+    const unmodifiedCrateNames = unmodifiedManifests.map(
+      manifest => manifest.name
+    )
+    core.debug(`modified crates: ${modifiedCrateNames.join(', ')}`)
+    core.debug(`unmodified crates: ${unmodifiedCrateNames.join(', ')}`)
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }
 }
-
 
 run()
